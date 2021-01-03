@@ -4,20 +4,12 @@ import styled from 'styled-components';
 import Web3Modal from 'web3modal';
 // @ts-ignore
 import WalletConnectProvider from '@walletconnect/web3-provider';
-import Button from './components/Button';
 import Column from './components/Column';
 import Wrapper from './components/Wrapper';
 import Header from './components/Header';
 import Loader from './components/Loader';
 import ConnectButton from './components/ConnectButton';
 
-import { fonts } from './styles';
-import {
-  US_ELECTION_ROPSTEN_ADDRESS
-} from './constants';
-import { getContract } from './helpers/ethers';
-import US_ELECTION from './constants/abis/USElection.json';
-import { logMsg } from './helpers/dev';
 import { Web3Provider } from '@ethersproject/providers';
 import { getChainData } from './helpers/utilities';
 
@@ -54,23 +46,6 @@ const SBalances = styled(SLanding)`
   & h3 {
     padding-top: 30px;
   }
-`;
-
-const STestButtonContainer = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
-const STestButton = styled(Button)`
-  border-radius: 8px;
-  font-size: ${ fonts.size.medium };
-  height: 44px;
-  width: 100%;
-  max-width: 175px;
-  margin: 12px;
 `;
 
 interface IAppState {
@@ -131,91 +106,13 @@ class App extends React.Component<any, any> {
 
     const address = provider.selectedAddress ? provider.selectedAddress : provider?.accounts[0];
 
-    const electionContract = getContract(US_ELECTION_ROPSTEN_ADDRESS, US_ELECTION.abi, library, address);
-
     await this.setState({
       provider,
       library,
       chainId: network.chainId,
       address,
-      connected: true,
-      electionContract
+      connected: true
     });
-  };
-
-  public currentLeader = async () => {
-    const { electionContract } = this.state;
-
-    if (!electionContract) {
-      return;
-    }
-
-    const currentLeader = await electionContract.currentLeader();
-    logMsg('Current leader: ', currentLeader);
-
-    await this.setState({ info: { message: `Current Leader: ${ currentLeader }`, link: '#' } });
-  };
-
-  public submitElectionResult = async () => {
-    const { electionContract } = this.state;
-
-    if (!electionContract) {
-      return;
-    }
-
-    const dataArr = [
-      'Dupnitsa',
-      1,
-      50,
-      24
-    ];
-
-    try {
-      await this.setState({ fetching: true });
-      const transaction = await electionContract.submitStateResult(dataArr);
-
-      logMsg(`Wait for the transaction... State Result Submission Transaction: ${ transaction.hash }`);
-
-      const {chainId} = this.state;
-      const chainData = chainId ? getChainData(chainId) : null;
-      await this.setState({ info: { message: `Etherscan tx: ${transaction.hash}`, link: `${chainData.explorer}/tx/${transaction.hash}` } });
-
-      const transactionReceipt = await transaction.wait();
-      if (transactionReceipt.status !== 1) {
-        logMsg('Transaction was not successful');
-      }
-
-      await this.setState({ fetching: false });
-    } catch (e) {
-      await this.setState({ fetching: false });
-      await this.setState({ info: { message: e, link: '#' } });
-    }
-  };
-
-  public endElection = async () => {
-    const { electionContract } = this.state;
-
-    if (!electionContract) {
-      return;
-    }
-
-    try {
-      await this.setState({ fetching: true });
-
-      const endTransaction = await electionContract.endElection();
-      logMsg('End Transaction: ', endTransaction.hash);
-
-      const endTransactionReceipt = await endTransaction.wait();
-      if (endTransactionReceipt.status !== 1) {
-        logMsg('Transaction was not successful');
-      }
-      await this.setState({ info: { message: `Etherscan tx: ${endTransaction.hash}`, link: `${endTransaction.explorer}/tx/${endTransaction.hash}` } });
-
-      await this.setState({ fetching: false });
-    } catch (e) {
-      await this.setState({ fetching: false });
-      await this.setState({ info: { message: e, link: '#' } });
-    }
   };
 
   public getNetwork = () => getChainData(this.state.chainId).network;
@@ -242,9 +139,7 @@ class App extends React.Component<any, any> {
       address,
       connected,
       chainId,
-      fetching,
-      electionContract,
-      info
+      fetching
     } = this.state;
     return (
       <SLayout>
@@ -262,30 +157,7 @@ class App extends React.Component<any, any> {
                   <Loader/>
                 </SContainer>
               </Column>
-            ) : electionContract ? (
-              <SBalances>
-                <h3>Contract Actions</h3>
-                <Column center>
-                  <STestButtonContainer>
-                    <STestButton left onClick={ this.currentLeader }>
-                      Current Leader
-                    </STestButton>
-
-                    <STestButton left onClick={ this.submitElectionResult }>
-                      Submit Result
-                    </STestButton>
-
-                    <STestButton left onClick={ this.endElection }>
-                      End election
-                    </STestButton>
-                  </STestButtonContainer>
-                  { info !== null ? (<STestButtonContainer>
-                    <a href={ info.link }
-                       target="_blank">{ info.message }</a>
-                  </STestButtonContainer>) : null }
-                </Column>
-              </SBalances>
-            ) : (
+            ) :(
               <SLanding center>
                 <ConnectButton onClick={ this.onConnect }/>
               </SLanding>
