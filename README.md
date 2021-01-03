@@ -1,7 +1,6 @@
 # Web3 Boilerplate
 
 Web3 Boilerplate is an easy-to-use starting project to help developers add support for multiple providers in their apps with a simple customizable configuration and use ethers for contract interactions.
-By default Web3Modal Library supports injected providers like (Metamask, Dapper, Gnosis Safe, Frame, Web3 Browsers, etc) and WalletConnect, You can also easily configure the library to support Portis, Fortmatic, Squarelink, Torus, Authereum, D'CENT Wallet and Arkane.
 
 - [web3modal](https://github.com/Web3Modal/web3modal/)
 - [ethers](https://docs.ethers.io/v5/)
@@ -15,7 +14,7 @@ npm install
 
 # OR
 
-yarn
+yarn add web3modal
 ```
 
 2. Start the app
@@ -28,3 +27,15 @@ npm run start
 yarn start
 ```
 
+## Contract interaction tips
+- create ethers Web3Provider from the web3modal provider;
+```
+...
+import { Web3Provider } from '@ethersproject/providers';
+...
+const provider = await this.web3Modal.connect();
+const library = new Web3Provider(provider);
+...
+```
+- get ethers contract instance(check `ethers.ts` within `./helpers` folder);
+- use contract instance to interact with the contract - check `currentLeader`, `submitElectionResult` and `endElection`;
