@@ -126,6 +126,8 @@ class App extends React.Component<any, any> {
   public onConnect = async () => {
     const provider = await this.web3Modal.connect();
 
+    await this.subscribeProvider(provider);
+
     const library = new Web3Provider(provider);
     const network = await library.getNetwork();
 
@@ -140,6 +142,24 @@ class App extends React.Component<any, any> {
       address,
       connected: true,
       electionContract
+    });
+  };
+
+  public subscribeProvider = async (provider: any) => {
+    if (!provider.on) {
+      return;
+    }
+    provider.on("close", () => this.resetApp());
+    provider.on("accountsChanged", async (accounts: string[]) => {
+      await this.setState({ address: accounts[0] });
+    });
+
+    provider.on("networkChanged", async (networkId: number) => {
+      const library = new Web3Provider(provider);
+      const network = await library.getNetwork();
+      const chainId = network.chainId;
+
+      await this.setState({ chainId, library });
     });
   };
 
@@ -262,7 +282,7 @@ class App extends React.Component<any, any> {
                   <Loader/>
                 </SContainer>
               </Column>
-            ) : electionContract ? (
+            ) : electionContract && connected ? (
               <SBalances>
                 <h3>Contract Actions</h3>
                 <Column center>
