@@ -2,6 +2,22 @@ import { IChainData } from './types';
 
 const supportedChains: IChainData[] = [
   {
+    name: 'Unknown Network',
+    short_name: 'UNK',
+    chain: 'ETH',
+    network: 'local',
+    chain_id: -1,
+    network_id: -1,
+    rpc_url: 'http://localhost:8545',
+    native_currency: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: '18',
+      contractAddress: '',
+      balance: ''
+    }
+  },
+  {
     name: 'Ethereum Mainnet',
     short_name: 'eth',
     chain: 'ETH',

@@ -15,7 +15,7 @@ npm install
 
 # OR
 
-yarn add web3modal
+yarn
 ```
 
 2. Start the app
