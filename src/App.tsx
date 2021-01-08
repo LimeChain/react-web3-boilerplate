@@ -101,12 +101,12 @@ class App extends React.Component<any, any> {
   public onConnect = async () => {
     const provider = await this.web3Modal.connect();
 
-    await this.subscribeProvider(provider);
-
     const library = new Web3Provider(provider);
     const network = await library.getNetwork();
 
     const address = provider.selectedAddress ? provider.selectedAddress : provider?.accounts[0];
+
+    await this.subscribeToProviderEvents(provider);
 
     await this.setState({
       provider,
@@ -117,7 +117,7 @@ class App extends React.Component<any, any> {
     });
   };
 
-  public subscribeProvider = async (provider: any) => {
+  public subscribeToProviderEvents = async (provider: any) => {
     if (!provider.on) {
       return;
     }
@@ -134,7 +134,7 @@ class App extends React.Component<any, any> {
       await this.setState({ chainId, library });
     });
   };
-  
+
   public getNetwork = () => getChainData(this.state.chainId).network;
 
   public getProviderOptions = () => {
@@ -163,25 +163,25 @@ class App extends React.Component<any, any> {
     } = this.state;
     return (
       <SLayout>
-        <Column maxWidth={ 1000 } spanHeight>
+        <Column maxWidth={1000} spanHeight>
           <Header
-            connected={ connected }
-            address={ address }
-            chainId={ chainId }
-            killSession={ this.resetApp }
+            connected={connected}
+            address={address}
+            chainId={chainId}
+            killSession={this.resetApp}
           />
           <SContent>
-            { fetching ? (
+            {fetching ? (
               <Column center>
                 <SContainer>
-                  <Loader/>
+                  <Loader />
                 </SContainer>
               </Column>
-            ) :(
-              <SLanding center>
-                <ConnectButton onClick={ this.onConnect }/>
-              </SLanding>
-            ) }
+            ) : (
+                <SLanding center>
+                  <ConnectButton onClick={this.onConnect} />
+                </SLanding>
+              )}
           </SContent>
         </Column>
       </SLayout>
