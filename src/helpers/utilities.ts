@@ -3,6 +3,8 @@ import Noty from 'noty';
 import '../../node_modules/noty/lib/noty.css';  
 import '../../node_modules/noty/lib/themes/mint.css';  
 
+const NOTIFICATION_TIMEOUT = 3500;
+
 export function capitalize(string: string): string {
   return string
     .split(" ")
@@ -134,7 +136,7 @@ export function getChainData(chainId: number): any {
 export function showNotification(text:string) {
     new Noty({ 
       text,
-      timeout: 3500,
+      timeout: NOTIFICATION_TIMEOUT,
       type: 'success'
       
   }).show();
