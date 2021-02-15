@@ -113,32 +113,32 @@ class App extends React.Component<any, any> {
       connected: true
     });
 
-    await this.subscribeToProviderEvents();
+    await this.subscribeToProviderEvents(this.provider);
 
   };
 
-  public subscribeToProviderEvents = async () => {
-    if (!this.provider.on) {
+  public subscribeToProviderEvents = async (provider:any) => {
+    if (!provider.on) {
       return;
     }
 
-    this.provider.on("accountsChanged", this.changedAccount);
-    this.provider.on("networkChanged", this.networkChanged);
-    this.provider.on("close", this.close);
+    provider.on("accountsChanged", this.changedAccount);
+    provider.on("networkChanged", this.networkChanged);
+    provider.on("close", this.close);
 
     await this.web3Modal.off('accountsChanged');
   };
 
-  public async unSubscribe() {
+  public async unSubscribe(provider:any) {
     // Workaround for metamask widget > 9.0.3 (provider.off is undefined);
     window.location.reload(false);
-    if (!this.provider.off) {
+    if (!provider.off) {
       return;
     }
 
-    this.provider.off("accountsChanged", this.changedAccount);
-    this.provider.off("networkChanged", this.networkChanged);
-    this.provider.off("close", this.close);
+    provider.off("accountsChanged", this.changedAccount);
+    provider.off("networkChanged", this.networkChanged);
+    provider.off("close", this.close);
   }
 
   public changedAccount = async (accounts: string[]) => {
@@ -179,7 +179,7 @@ class App extends React.Component<any, any> {
     await this.web3Modal.clearCachedProvider();
     localStorage.removeItem("WEB3_CONNECT_CACHED_PROVIDER");
     localStorage.removeItem("walletconnect");
-    await this.unSubscribe();
+    await this.unSubscribe(this.provider);
 
     this.setState({ ...INITIAL_STATE });
 
