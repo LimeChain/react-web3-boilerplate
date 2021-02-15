@@ -19,6 +19,7 @@
     "ethereumjs-util": "^6.1.0",
     "ethers": "^5.0.24",
     "fortmatic": "^0.8.2",
+    "noty": "^3.2.0-beta",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
