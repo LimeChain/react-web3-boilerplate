@@ -51,7 +51,6 @@ const SBalances = styled(SLanding)`
 interface IAppState {
   fetching: boolean;
   address: string;
-  provider: any;
   library: any;
   connected: boolean;
   chainId: number;
@@ -64,7 +63,6 @@ interface IAppState {
 const INITIAL_STATE: IAppState = {
   fetching: false,
   address: '',
-  provider: null,
   library: null,
   connected: false,
   chainId: 1,
@@ -78,6 +76,7 @@ class App extends React.Component<any, any> {
   // @ts-ignore
   public web3Modal: Web3Modal;
   public state: IAppState;
+  public provider: any;
 
   constructor(props: any) {
     super(props);
@@ -99,41 +98,68 @@ class App extends React.Component<any, any> {
   }
 
   public onConnect = async () => {
-    const provider = await this.web3Modal.connect();
+    this.provider = await this.web3Modal.connect();
 
-    const library = new Web3Provider(provider);
+    const library = new Web3Provider(this.provider);
+
     const network = await library.getNetwork();
 
-    const address = provider.selectedAddress ? provider.selectedAddress : provider?.accounts[0];
-
-    await this.subscribeToProviderEvents(provider);
+    const address = this.provider.selectedAddress ? this.provider.selectedAddress : this.provider?.accounts[0];
 
     await this.setState({
-      provider,
       library,
       chainId: network.chainId,
       address,
       connected: true
     });
+
+    await this.subscribeToProviderEvents(this.provider);
+
   };
 
-  public subscribeToProviderEvents = async (provider: any) => {
+  public subscribeToProviderEvents = async (provider:any) => {
     if (!provider.on) {
       return;
     }
-    provider.on("close", () => this.resetApp());
-    provider.on("accountsChanged", async (accounts: string[]) => {
-      await this.setState({ address: accounts[0] });
-    });
 
-    provider.on("networkChanged", async (networkId: number) => {
-      const library = new Web3Provider(provider);
-      const network = await library.getNetwork();
-      const chainId = network.chainId;
+    provider.on("accountsChanged", this.changedAccount);
+    provider.on("networkChanged", this.networkChanged);
+    provider.on("close", this.close);
 
-      await this.setState({ chainId, library });
-    });
+    await this.web3Modal.off('accountsChanged');
   };
+
+  public async unSubscribe(provider:any) {
+    // Workaround for metamask widget > 9.0.3 (provider.off is undefined);
+    window.location.reload(false);
+    if (!provider.off) {
+      return;
+    }
+
+    provider.off("accountsChanged", this.changedAccount);
+    provider.off("networkChanged", this.networkChanged);
+    provider.off("close", this.close);
+  }
+
+  public changedAccount = async (accounts: string[]) => {
+    if(!accounts.length) {
+      // Metamask Lock fire an empty accounts array 
+      await this.resetApp();
+    } else {
+      await this.setState({ address: accounts[0] });
+    }
+  }
+
+  public networkChanged = async (networkId: number) => {
+    const library = new Web3Provider(this.provider);
+    const network = await library.getNetwork();
+    const chainId = network.chainId;
+    await this.setState({ chainId, library });
+  }
+  
+  public close = async () => {
+    this.resetApp();
+  }
 
   public getNetwork = () => getChainData(this.state.chainId).network;
 
@@ -151,7 +177,12 @@ class App extends React.Component<any, any> {
 
   public resetApp = async () => {
     await this.web3Modal.clearCachedProvider();
+    localStorage.removeItem("WEB3_CONNECT_CACHED_PROVIDER");
+    localStorage.removeItem("walletconnect");
+    await this.unSubscribe(this.provider);
+
     this.setState({ ...INITIAL_STATE });
+
   };
 
   public render = () => {
@@ -179,7 +210,7 @@ class App extends React.Component<any, any> {
               </Column>
             ) : (
                 <SLanding center>
-                  <ConnectButton onClick={this.onConnect} />
+                  {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
                 </SLanding>
               )}
           </SContent>
