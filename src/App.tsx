@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useEffect, useState } from "react";
+
 import styled from 'styled-components';
 
 import Web3Modal from 'web3modal';
@@ -48,122 +50,100 @@ const SBalances = styled(SLanding)`
   }
 `;
 
-interface IAppState {
-  fetching: boolean;
-  address: string;
-  library: any;
-  connected: boolean;
-  chainId: number;
-  pendingRequest: boolean;
-  result: any | null;
-  electionContract: any | null;
-  info: any | null;
-}
+let web3Modal: Web3Modal;
+const App = () => {
 
-const INITIAL_STATE: IAppState = {
-  fetching: false,
-  address: '',
-  library: null,
-  connected: false,
-  chainId: 1,
-  pendingRequest: false,
-  result: null,
-  electionContract: null,
-  info: null
-};
+  const [provider, setProvider] = useState<any>();
+  const [fetching, setFetching] = useState<boolean>(false);
+  const [address, setAddress] = useState<string>("");
+  const [library, setLibrary] = useState<any>(null);
+  const [connected, setConnected] = useState<boolean>(false);
+  const [chainId, setChainId] = useState<number>(1);
+  const [pendingRequest, setPedningRequest] = useState<boolean>(false);
+  const [result, setResult] = useState<any>();
+  const [libraryContract, setLibraryContract] = useState<any>(null);
+  const [info, setInfo] = useState<any>(null);
 
-class App extends React.Component<any, any> {
-  // @ts-ignore
-  public web3Modal: Web3Modal;
-  public state: IAppState;
-  public provider: any;
-
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      ...INITIAL_STATE
-    };
-
-    this.web3Modal = new Web3Modal({
-      network: this.getNetwork(),
-      cacheProvider: true,
-      providerOptions: this.getProviderOptions()
-    });
-  }
-
-  public componentDidMount() {
-    if (this.web3Modal.cachedProvider) {
-      this.onConnect();
+  useEffect(() => {
+    createWeb3Modal();
+    
+    if (web3Modal.cachedProvider) {
+      onConnect();
     }
+
+  }, []);
+
+  function createWeb3Modal() {
+    web3Modal = new Web3Modal({
+      network: getNetwork(),
+      cacheProvider: true,
+      providerOptions: getProviderOptions()
+    })
   }
 
-  public onConnect = async () => {
-    this.provider = await this.web3Modal.connect();
+  const onConnect = async () => {
+    const provider = await web3Modal.connect();
+    setProvider(provider);
 
-    const library = new Web3Provider(this.provider);
+    const library = new Web3Provider(provider);
 
     const network = await library.getNetwork();
 
-    const address = this.provider.selectedAddress ? this.provider.selectedAddress : this.provider?.accounts[0];
-
-    await this.setState({
-      library,
-      chainId: network.chainId,
-      address,
-      connected: true
-    });
-
-    await this.subscribeToProviderEvents(this.provider);
-
+    const address = provider.selectedAddress ? provider.selectedAddress : provider?.accounts[0];
+    setLibrary(library);
+    setChainId(network.chainId);
+    setAddress(address);
+    setConnected(true);
+    
+    await subscribeToProviderEvents(provider);
   };
 
-  public subscribeToProviderEvents = async (provider:any) => {
+  const subscribeToProviderEvents = async (provider:any) => {
     if (!provider.on) {
       return;
     }
 
-    provider.on("accountsChanged", this.changedAccount);
-    provider.on("networkChanged", this.networkChanged);
-    provider.on("close", this.close);
+    provider.on("accountsChanged", changedAccount);
+    provider.on("networkChanged", networkChanged);
+    provider.on("close", resetApp);
 
-    await this.web3Modal.off('accountsChanged');
+    await web3Modal.off('accountsChanged');
   };
 
-  public async unSubscribe(provider:any) {
+  const unSubscribe = async (provider:any) => {
     // Workaround for metamask widget > 9.0.3 (provider.off is undefined);
     window.location.reload(false);
     if (!provider.off) {
       return;
     }
 
-    provider.off("accountsChanged", this.changedAccount);
-    provider.off("networkChanged", this.networkChanged);
-    provider.off("close", this.close);
+    provider.off("accountsChanged", changedAccount);
+    provider.off("networkChanged", networkChanged);
+    provider.off("close", resetApp);
   }
 
-  public changedAccount = async (accounts: string[]) => {
+  const changedAccount = async (accounts: string[]) => {
     if(!accounts.length) {
       // Metamask Lock fire an empty accounts array 
-      await this.resetApp();
+      await resetApp();
     } else {
-      await this.setState({ address: accounts[0] });
+      setAddress(accounts[0]);
     }
   }
 
-  public networkChanged = async (networkId: number) => {
-    const library = new Web3Provider(this.provider);
+  const networkChanged = async (networkId: number) => {
+    const library = new Web3Provider(provider);
     const network = await library.getNetwork();
     const chainId = network.chainId;
-    await this.setState({ chainId, library });
-  }
-  
-  public close = async () => {
-    this.resetApp();
+    setChainId(chainId);
+    setLibrary(library);
   }
 
-  public getNetwork = () => getChainData(this.state.chainId).network;
+  function getNetwork() {
+    return getChainData(chainId).network;
+  }
 
-  public getProviderOptions = () => {
+  function getProviderOptions() {
     const providerOptions = {
       walletconnect: {
         package: WalletConnectProvider,
@@ -175,49 +155,51 @@ class App extends React.Component<any, any> {
     return providerOptions;
   };
 
-  public resetApp = async () => {
-    await this.web3Modal.clearCachedProvider();
+  const resetApp = async () => {
+    
+    await web3Modal.clearCachedProvider();
     localStorage.removeItem("WEB3_CONNECT_CACHED_PROVIDER");
     localStorage.removeItem("walletconnect");
-    await this.unSubscribe(this.provider);
-
-    this.setState({ ...INITIAL_STATE });
+    await unSubscribe(provider);
 
   };
 
-  public render = () => {
-    const {
-      address,
-      connected,
-      chainId,
-      fetching
-    } = this.state;
-    return (
-      <SLayout>
-        <Column maxWidth={1000} spanHeight>
-          <Header
-            connected={connected}
-            address={address}
-            chainId={chainId}
-            killSession={this.resetApp}
-          />
-          <SContent>
-            {fetching ? (
-              <Column center>
-                <SContainer>
-                  <Loader />
-                </SContainer>
-              </Column>
-            ) : (
-                <SLanding center>
-                  {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
-                </SLanding>
-              )}
-          </SContent>
-        </Column>
-      </SLayout>
-    );
-  };
+  const resetState = () => {
+    setFetching(false);
+    setAddress("");
+    setLibrary(null);
+    setConnected(false);
+    setChainId(1);
+    setPedningRequest(false);
+    setResult(null);
+    setLibraryContract(null);
+    setInfo(null);
+  }
+
+  return (
+    <SLayout>
+      <Column maxWidth={1000} spanHeight>
+        <Header
+          connected={connected}
+          address={address}
+          chainId={chainId}
+          killSession={resetApp}
+        />
+        <SContent>
+          {fetching ? (
+            <Column center>
+              <SContainer>
+                <Loader />
+              </SContainer>
+            </Column>
+          ) : (
+              <SLanding center>
+                {!connected && <ConnectButton onClick={onConnect} />}
+              </SLanding>
+            )}
+        </SContent>
+      </Column>
+    </SLayout>
+  );
 }
-
 export default App;
