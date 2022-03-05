@@ -43,7 +43,7 @@
     "@types/react-dom": "^16.9.8",
     "@types/styled-components": "4.1.8",
     "@types/web3": "^1.2.2",
-    "typescript": "^3.2.2"
+    "typescript": "3.2.2"
   },
   "browserslist": [
     ">0.2%",

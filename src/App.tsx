@@ -104,7 +104,7 @@ class App extends React.Component<any, any> {
 
     const network = await library.getNetwork();
 
-    const address = this.provider.selectedAddress ? this.provider.selectedAddress : this.provider?.accounts[0];
+    const address = this.provider.selectedAddress ? this.provider.selectedAddress : this.provider.accounts[0];
 
     await this.setState({
       library,
